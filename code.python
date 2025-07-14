@@ -1,0 +1,125 @@
+# resume_checker.py - Simple Resume Validator for Beginners
+
+import re
+from datetime import datetime
+
+def main():
+    print("""
+    ==================================
+    RESUME CHECKER APPLICATION
+    ==================================
+    This tool will help validate your resume information.
+    Please enter the requested details below.
+    """)
+
+    # Collect resume information
+    resume = {
+        'name': get_input("Full Name", required=True),
+        'email': get_email(),
+        'phone': get_phone(),
+        'experience': get_experience(),
+        'education': get_input("Highest Education Level"),
+        'skills': get_skills(),
+        'projects': get_input("Notable Projects (comma separated)"),
+        'certifications': get_input("Certifications (comma separated)")
+    }
+
+    # Validate and display results
+    print("\n=== VALIDATION RESULTS ===")
+    validate_resume(resume)
+    display_resume_summary(resume)
+
+def get_input(prompt, required=False):
+    """Get user input with basic validation"""
+    while True:
+        value = input(f"{prompt}: ").strip()
+        if required and not value:
+            print(f"{prompt} is required!")
+        else:
+            return value
+
+def get_email():
+    """Validate email format"""
+    while True:
+        email = input("Email: ").strip()
+        if re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return email
+        print("Invalid email format. Please try again.")
+
+def get_phone():
+    """Validate phone number format"""
+    while True:
+        phone = input("Phone (numbers only): ").strip()
+        if phone.isdigit() and len(phone) >= 10:
+            return phone
+        print("Phone must contain at least 10 digits.")
+
+def get_experience():
+    """Validate years of experience"""
+    while True:
+        try:
+            years = float(input("Years of Experience: "))
+            if years >= 0:
+                return years
+            print("Experience cannot be negative.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+def get_skills():
+    """Ensure at least 3 skills are entered"""
+    while True:
+        skills = input("Skills (comma separated, min 3): ").strip()
+        skill_list = [s.strip() for s in skills.split(",") if s.strip()]
+        if len(skill_list) >= 3:
+            return ", ".join(skill_list)
+        print("Please enter at least 3 skills.")
+
+def validate_resume(resume):
+    """Check for common resume issues"""
+    issues = []
+    
+    # Check name length
+    if len(resume['name'].split()) < 2:
+        issues.append("Consider using your full name (first + last)")
+    
+    # Check experience
+    if float(resume['experience']) < 1:
+        issues.append("Consider highlighting internships or academic projects")
+    
+    # Check skills count
+    if len(resume['skills'].split(",")) < 5:
+        issues.append("Try to include more relevant skills")
+    
+    # Check projects
+    if not resume['projects']:
+        issues.append("Adding projects can strengthen your resume")
+    
+    if issues:
+        print("\n⚠️ Areas for improvement:")
+        for issue in issues:
+            print(f"- {issue}")
+    else:
+        print("\n✅ Your resume looks good!")
+
+def display_resume_summary(resume):
+    """Display formatted resume summary"""
+    print("\n=== YOUR RESUME SUMMARY ===")
+    print(f"Name: {resume['name']}")
+    print(f"Contact: {resume['email']} | {resume['phone']}")
+    print(f"Experience: {resume['experience']} years")
+    print(f"Education: {resume['education']}")
+    print("\nSkills:")
+    print("- " + "\n- ".join(skill.strip() for skill in resume['skills'].split(",")))
+    
+    if resume['projects']:
+        print("\nProjects:")
+        print("- " + "\n- ".join(p.strip() for p in resume['projects'].split(",")))
+    
+    if resume['certifications']:
+        print("\nCertifications:")
+        print("- " + "\n- ".join(c.strip() for c in resume['certifications'].split(",")))
+
+    print("\nGenerated on:", datetime.now().strftime("%Y-%m-%d"))
+
+if __name__ == "__main__":
+    main()
