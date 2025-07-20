@@ -1,6 +1,6 @@
 
     
-            import streamlit as st
+import streamlit as st
 import re
 
 st.set_page_config(page_title="Resume Analyzer", layout="wide")
