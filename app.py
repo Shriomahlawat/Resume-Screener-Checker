@@ -1,36 +1,71 @@
+# app.py
+
 import streamlit as st
 import re
 
-# Define job-related keywords
-keywords = ["python", "machine learning", "sql", "data analysis", "communication", "excel"]
+# Required skill list for matching
+REQUIRED_SKILLS = ['Python', 'Machine Learning', 'SQL', 'Git', 'AWS']
 
-# Title
-st.title("📄 Simple Resume Analyzer")
+# Education Levels
+EDUCATION_LEVELS = {
+    "Ph.D": ["ph.d", "doctor of philosophy"],
+    "Master's": ["master", "m.sc", "m.tech", "mba"],
+    "Bachelor's": ["bachelor", "b.tech", "b.sc", "b.e"]
+}
 
-# File uploader
-uploaded_file = st.file_uploader("Upload your resume (.txt format)", type=["txt"])
 
-if uploaded_file:
-    resume_text = uploaded_file.read().decode("utf-8").lower()
-    st.subheader("🔍 Resume Analysis")
+def extract_text(file):
+    return file.read().decode('utf-8')
 
-    # Feature 1: Keyword Match Score
-    matched_keywords = [kw for kw in keywords if kw in resume_text]
-    score = len(matched_keywords) / len(keywords) * 100
-    st.write("✅ **Keyword Match Score:**", f"{score:.2f}%")
-    st.write("Matched Keywords:", ", ".join(matched_keywords) if matched_keywords else "None")
 
-    # Feature 2: Experience Level Estimation
-    years = re.findall(r'(\d+)\s+years?', resume_text)
+def skill_match(resume_text):
+    matched = [skill for skill in REQUIRED_SKILLS if skill.lower() in resume_text.lower()]
+    return matched, list(set(REQUIRED_SKILLS) - set(matched))
+
+
+def detect_education_level(resume_text):
+    text = resume_text.lower()
+    for level, keywords in EDUCATION_LEVELS.items():
+        for keyword in keywords:
+            if keyword in text:
+                return level
+    return "Not Found"
+
+
+def estimate_experience(resume_text):
+    years = re.findall(r'(\d+)\+?\s+years', resume_text.lower())
     if years:
-        max_years = max(map(int, years))
-        if max_years >= 5:
-            level = "Senior"
-        elif max_years >= 2:
-            level = "Mid-Level"
+        max_year = max(map(int, years))
+        if max_year >= 5:
+            return "Senior Level"
+        elif max_year >= 2:
+            return "Mid Level"
         else:
-            level = "Junior"
-    else:
-        level = "Not Specified"
+            return "Entry Level"
+    return "Not Mentioned"
 
-    st.write("👔 **Experience Level:**", level)
+
+# ---------------------- Streamlit App ----------------------
+
+st.title("📄 Simple Resume Analyzer")
+st.write("Upload a plain text `.txt` resume to get analysis.")
+
+uploaded_file = st.file_uploader("Upload Resume (.txt only)", type=["txt"])
+
+if uploaded_file is not None:
+    resume_text = extract_text(uploaded_file)
+
+    st.subheader("✅ Skill Match")
+    matched_skills, missing_skills = skill_match(resume_text)
+    st.write("**Matched Skills:**", matched_skills)
+    st.write("**Missing Skills:**", missing_skills)
+
+    st.subheader("🎓 Education Level")
+    education = detect_education_level(resume_text)
+    st.write("**Detected Education:**", education)
+
+    st.subheader("💼 Experience Level")
+    experience = estimate_experience(resume_text)
+    st.write("**Estimated Level:**", experience)
+
+    st.success("Analysis Complete ✅")
