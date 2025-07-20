@@ -1,71 +1,62 @@
-# app.py
-
 import streamlit as st
 import re
 
-# Required skill list for matching
-REQUIRED_SKILLS = ['Python', 'Machine Learning', 'SQL', 'Git', 'AWS']
+st.set_page_config(page_title="Resume Analyzer", layout="wide")
 
-# Education Levels
-EDUCATION_LEVELS = {
-    "Ph.D": ["ph.d", "doctor of philosophy"],
-    "Master's": ["master", "m.sc", "m.tech", "mba"],
-    "Bachelor's": ["bachelor", "b.tech", "b.sc", "b.e"]
-}
+st.title("🧠 Simple Resume Analyzer App")
 
+# --- User Inputs ---
+resume_text = st.text_area("Paste your Resume Text here", height=300)
+job_description = st.text_area("Paste the Job Description here (for ATS Score)", height=200)
 
-def extract_text(file):
-    return file.read().decode('utf-8')
+# --- Utility Functions ---
+def get_skills_score(resume, jd_keywords):
+    resume_words = resume.lower().split()
+    jd_words = jd_keywords.lower().split()
+    match_count = sum(1 for word in jd_words if word in resume_words)
+    return round((match_count / len(jd_words)) * 100, 2) if jd_words else 0
 
+def extract_email(resume):
+    match = re.search(r'\b[\w\.-]+@[\w\.-]+\.\w+\b', resume)
+    return match.group(0) if match else "Not Found"
 
-def skill_match(resume_text):
-    matched = [skill for skill in REQUIRED_SKILLS if skill.lower() in resume_text.lower()]
-    return matched, list(set(REQUIRED_SKILLS) - set(matched))
+def extract_phone(resume):
+    match = re.search(r'\b\d{10}\b', resume)
+    return match.group(0) if match else "Not Found"
 
+# --- Feature Computations ---
+if resume_text:
+    st.subheader("📋 Resume Screening Results")
 
-def detect_education_level(resume_text):
-    text = resume_text.lower()
-    for level, keywords in EDUCATION_LEVELS.items():
-        for keyword in keywords:
-            if keyword in text:
-                return level
-    return "Not Found"
+    col1, col2 = st.columns(2)
 
+    with col1:
+        st.markdown("✅ **Email ID:**")
+        st.write(extract_email(resume_text))
 
-def estimate_experience(resume_text):
-    years = re.findall(r'(\d+)\+?\s+years', resume_text.lower())
-    if years:
-        max_year = max(map(int, years))
-        if max_year >= 5:
-            return "Senior Level"
-        elif max_year >= 2:
-            return "Mid Level"
+        st.markdown("✅ **Phone Number:**")
+        st.write(extract_phone(resume_text))
+
+        st.markdown("📏 **Resume Length (words):**")
+        st.write(len(resume_text.split()))
+
+    with col2:
+        if job_description:
+            st.markdown("📊 **ATS Match Score (%):**")
+            score = get_skills_score(resume_text, job_description)
+            st.success(f"{score} % match with job description")
+
+            st.markdown("🔑 **Matching Keyword Count:**")
+            jd_keywords = job_description.lower().split()
+            matched_keywords = [word for word in jd_keywords if word in resume_text.lower().split()]
+            st.write(len(matched_keywords))
         else:
-            return "Entry Level"
-    return "Not Mentioned"
+            st.info("Add a Job Description to calculate ATS Score.")
 
 
-# ---------------------- Streamlit App ----------------------
 
-st.title("📄 Simple Resume Analyzer")
-st.write("Upload a plain text `.txt` resume to get analysis.")
 
-uploaded_file = st.file_uploader("Upload Resume (.txt only)", type=["txt"])
 
-if uploaded_file is not None:
-    resume_text = extract_text(uploaded_file)
 
-    st.subheader("✅ Skill Match")
-    matched_skills, missing_skills = skill_match(resume_text)
-    st.write("**Matched Skills:**", matched_skills)
-    st.write("**Missing Skills:**", missing_skills)
 
-    st.subheader("🎓 Education Level")
-    education = detect_education_level(resume_text)
-    st.write("**Detected Education:**", education)
-
-    st.subheader("💼 Experience Level")
-    experience = estimate_experience(resume_text)
-    st.write("**Estimated Level:**", experience)
-
-    st.success("Analysis Complete ✅")
+   
