@@ -1,7 +1,6 @@
-
-    
 import streamlit as st
 import re
+import urllib.parse
 
 st.set_page_config(page_title="Resume Analyzer", layout="wide")
 
@@ -34,24 +33,26 @@ def extract_phone(text):
 def get_skills_score(resume, jd_keywords):
     resume_words = resume.lower().split()
     jd_words = jd_keywords.lower().split()
-    match_count = sum(1 for word in jd_words if word in resume_words)
-    matched_keywords = [word for word in jd_words if word in resume_words]
+    matched = [word for word in jd_words if word in resume_words]
+    missing = [word for word in jd_words if word not in resume_words]
+    score = round((len(matched) / len(jd_words)) * 100, 2) if jd_words else 0
     return {
-        "score": round((match_count / len(jd_words)) * 100, 2) if jd_words else 0,
-        "matched_keywords": matched_keywords
+        "score": score,
+        "matched_keywords": matched,
+        "missing_keywords": missing
     }
 
 def generate_suggestions(resume, match_score, matched_keywords):
     suggestions = []
 
     if len(resume.split()) < 100:
-        suggestions.append("🔹 Resume is too short. Try adding more details about your skills and experience.")
+        suggestions.append("🔹 Resume is too short. Add more details about your experience and skills.")
 
     if match_score < 40:
-        suggestions.append("🔹 Few job description keywords are found. Include more relevant skills and keywords.")
+        suggestions.append("🔹 Very few keywords match the job description. Consider revising your resume.")
 
     if extract_email(resume) == "Not Found":
-        suggestions.append("🔹 Email ID is missing from the resume.")
+        suggestions.append("🔹 Email ID is missing.")
 
     if extract_phone(resume) == "Not Found":
         suggestions.append("🔹 Phone number is missing or incorrectly formatted.")
@@ -60,9 +61,14 @@ def generate_suggestions(resume, match_score, matched_keywords):
         suggestions.append("🔹 No relevant keywords found from job description.")
 
     if not suggestions:
-        suggestions.append("✅ Your resume looks good! Just ensure it's tailored to each job description.")
+        suggestions.append("✅ Your resume looks good! Just ensure it's tailored to each job.")
 
     return suggestions
+
+def generate_job_search_url(job_title):
+    base_url = "https://www.google.com/search?q="
+    query = urllib.parse.quote_plus(f"{job_title} jobs near me")
+    return base_url + query
 
 # --- Feature Computation ---
 if resume_text:
@@ -97,6 +103,28 @@ if resume_text:
         suggestions = generate_suggestions(resume_text, result['score'], result['matched_keywords'])
         for tip in suggestions:
             st.write(tip)
+
+        # --- Skill Gap Section ---
+        st.subheader("🧩 Skill Gap Analysis")
+        if result["missing_keywords"]:
+            st.warning("Missing Keywords (consider adding):")
+            st.write(", ".join(result["missing_keywords"]))
+        else:
+            st.success("Your resume covers all the keywords in the job description!")
+
+        # --- Job Search Section ---
+        st.subheader("🌍 Job Openings Near You")
+        job_title_guess = job_description.split("\n")[0] if job_description else "jobs"
+        search_url = generate_job_search_url(job_title_guess)
+        st.markdown(f"🔎 [Search job openings for '{job_title_guess}']({search_url})")
+
+
+    
+
+    
+    
+        
+            
 
 
    
